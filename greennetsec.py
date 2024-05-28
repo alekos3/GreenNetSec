@@ -425,9 +425,9 @@ def analyze_devices(device_list, token, url, cve_token=None):
     # Create a DataFrame and write to Excel
     if results:
         df = pd.DataFrame(results)
-        df.to_excel('energy_savings_report.xlsx', index=False)
+        df.to_excel('ai_analysis_report.xlsx', index=False)
 
-        print("Report written to 'energy_savings_report.xlsx'.")
+        print("Report written to 'ai_analysis_report.xlsx'.")
 
     print()
     return
@@ -478,8 +478,6 @@ def display_welcome_message():
     Analyzing Cisco IOS and IOS XE devices for energy efficiency and security...
 
     Please wait while we process the configurations and provide recommendations.
-
-    For help, type 'python greennetsec.py --help'.
     
     This software is licensed under the MIT License.
     """
