@@ -466,6 +466,7 @@ def main(username, password, url, cve_token, DONE_EVENT):
         else:
             print("No devices to analyze!")
             DONE_EVENT.set()
+            return
 
     except Exception as e:
         print(e)
