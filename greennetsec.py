@@ -69,7 +69,7 @@ def open_vuln_api(token, os_type, version, score=7):
         if float(cve["cvssBaseScore"]) >= score:
             cve_counter += 1
             cve_info += f'{cve_counter})    advisoryTitle: ' + cve['advisoryTitle'] + "\n"
-            cve_info += f'        cvssBaseScore: ' + cve['cvssBaseScore'] + "\n"
+            cve_info += '        cvssBaseScore: ' + cve['cvssBaseScore'] + "\n"
             cve_info += '        publicationUrl: ' + cve['publicationUrl'] + "\n\n"
 
     return cve_info
@@ -108,6 +108,7 @@ def get_auth_token(base_url, username, password):
 
 
 def command_runner(base_url, token, command, device_uuid_list):
+    global DONE_EVENT
     url = f"https://{base_url}/dna/intent/api/v1/network-device-poller/cli/read-request"
     headers = {"Accept": "application/json", "Content-type": "application/json", "x-auth-token": token}
 
@@ -128,6 +129,7 @@ def command_runner(base_url, token, command, device_uuid_list):
 
 
 def get_devices_by_type(base_url, token, dev_type=None):
+    global DONE_EVENT
     offset = 1
     limit = 500  # Do NOT exceed 500 as the limit (Per DNAC documentation)
     device_list = []
@@ -160,6 +162,7 @@ def get_devices_by_type(base_url, token, dev_type=None):
 
 
 def download_file(base_url, token, file_id):
+    global DONE_EVENT
     url = f"https://{base_url}/dna/intent/api/v1/file/{file_id}"
 
     headers = {
@@ -182,6 +185,7 @@ def download_file(base_url, token, file_id):
 
 
 def get_task_by_id(base_url, token, task_id):
+    global DONE_EVENT
     url = f"https://{base_url}/dna/intent/api/v1/task/{task_id}"
 
     headers = {
@@ -208,6 +212,7 @@ def get_task_by_id(base_url, token, task_id):
 
 
 def divide_list(lst, chunk_size):
+    global DONE_EVENT
     divided_list = []
 
     try:
@@ -232,6 +237,7 @@ def tokenize_text(text):
 
 
 def detokenize_tokens(tokens):
+    global DONE_EVENT
     try:
         return gpt3_tokenizer.decode(tokens)
 
@@ -242,6 +248,7 @@ def detokenize_tokens(tokens):
 
 
 def split_into_chunks(tokens, max_tokens, overlap):
+    global DONE_EVENT
     chunks = []
     start = 0
 
@@ -265,6 +272,7 @@ def split_into_chunks(tokens, max_tokens, overlap):
 
 
 def analyze_output(output):
+    global DONE_EVENT
     analysis = None
 
     prompt = (f"Analyze the following Cisco network device configuration for energy-saving opportunities and potential "
@@ -453,7 +461,11 @@ def main(username, password, url, cve_token, DONE_EVENT):
 
     print("Starting analysis..")
     try:
-        analyze_devices(device_list, cc_token, url, cve_token)
+        if device_list:
+            analyze_devices(device_list, cc_token, url, cve_token)
+        else:
+            print("No devices to analyze!")
+            DONE_EVENT.set()
 
     except Exception as e:
         print(e)
