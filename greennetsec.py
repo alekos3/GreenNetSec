@@ -65,12 +65,15 @@ def open_vuln_api(token, os_type, version, score=7):
 
     response = requests.request('GET', url, headers=headers)
 
-    for cve in response.json().get("advisories"):
-        if float(cve["cvssBaseScore"]) >= score:
-            cve_counter += 1
-            cve_info += f'{cve_counter})    advisoryTitle: ' + cve['advisoryTitle'] + "\n"
-            cve_info += '        cvssBaseScore: ' + cve['cvssBaseScore'] + "\n"
-            cve_info += '        publicationUrl: ' + cve['publicationUrl'] + "\n\n"
+    try:
+        for cve in response.json().get("advisories"):
+            if float(cve["cvssBaseScore"]) >= score:
+                cve_counter += 1
+                cve_info += f'{cve_counter})    advisoryTitle: ' + cve['advisoryTitle'] + "\n"
+                cve_info += '        cvssBaseScore: ' + cve['cvssBaseScore'] + "\n"
+                cve_info += '        publicationUrl: ' + cve['publicationUrl'] + "\n\n"
+    except:
+        cve_info = f"No CVEs found with a score of {score} or higher."
 
     return cve_info
 
@@ -302,7 +305,7 @@ def analyze_output(output):
     return analysis
 
 
-def analyze_devices(device_list, token, url, cve_token=None):
+def analyze_devices(device_list, token, url, cve_token):
     dev_uuid_list = []
     dev_uuid_to_ip_dict = {}
     software_pid_dict = {}
@@ -420,7 +423,7 @@ def analyze_devices(device_list, token, url, cve_token=None):
 
         results.append({
             'Hostname': dev_uuid_to_ip_dict[dev['deviceUuid']],
-            'General Analysis': analysis,
+            'General Analysis (interfaces status,power inline,environment all,inventory,processes cpu)': analysis,
             'Running-config Analysis': config_analysis,
             'CPU Analysis': cpu_analysis,
             'Route Table Analysis': ip_route_analysis,
