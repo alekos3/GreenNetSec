@@ -14,6 +14,11 @@ import requests
 import urllib3
 import json
 import copy
+import sys
+
+"""
+    usage: python3 greennetsec.py
+"""
 
 urllib3.disable_warnings()
 
@@ -28,10 +33,12 @@ def loading_bar():
 
     while not DONE_EVENT.is_set():
         progress += 1
-        print(f"\rAnalysis underway:{block * progress}", end='', flush=True)  # end="\r"
-        if progress == 40:
+        print(f"\rAnalysis underway: {block * progress}{' ' * (30 - progress)}", end='')
+        sys.stdout.flush()  # Manually flush the output buffer
+        if progress == 30:
             progress = 0
         time.sleep(1)
+
     print()
 
 
@@ -147,7 +154,10 @@ def get_devices_by_type(base_url, token, dev_type=None):
         while True:
             # Make the GET Request
             url = f"https://{base_url}/dna/intent/api/v1/network-device?offset={offset}&limit={limit}"
-            # family=Switches+and+Hubs&type={dev_type}
+
+            if dev_type:
+                url = f"https://{base_url}/dna/intent/api/v1/network-device?family={dev_type[0]}={dev_type[1]}&offset={offset}&limit={limit}"
+
             response = requests.request("GET", url, headers=headers, verify=False)
 
             if response.json()['response'] and response.status_code != 401:
@@ -291,7 +301,8 @@ def analyze_output(output):
                     "content": prompt,
                 }
             ],
-            temperature=0.2, # The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic
+            temperature=0.2,
+            # The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic
             # top_p=0.1,
             max_tokens=1000
         )
@@ -318,7 +329,8 @@ def analyze_devices(device_list, token, url, cve_token):
         dev_uuid_list.append(dev_id["id"])
 
         if cve_token and not cve_dict.get(dev_id["softwareVersion"]):
-            cve_dict[dev_id["softwareVersion"]] = open_vuln_api(cve_token, dev_id["softwareType"], dev_id["softwareVersion"], score=8)
+            cve_dict[dev_id["softwareVersion"]] = open_vuln_api(cve_token, dev_id["softwareType"],
+                                                                dev_id["softwareVersion"], score=8)
 
         software_pid_dict[dev_id["id"]] = [dev_id["softwareType"] + ' ' + dev_id["softwareVersion"], dev_id["type"],
                                            cve_dict.get(dev_id["softwareVersion"]) or "N/A"]
@@ -438,7 +450,8 @@ def analyze_devices(device_list, token, url, cve_token):
         df = pd.DataFrame(results)
         df.to_excel('ai_analysis_report.xlsx', index=False)
 
-        print("Report written to 'ai_analysis_report.xlsx'.")
+        print()
+        print("Done! Report written to 'ai_analysis_report.xlsx'.")
 
     print()
     return
@@ -459,8 +472,9 @@ def extract_potential_savings(analysis):
 def main(username, password, url, cve_token, DONE_EVENT):
     cc_token = get_auth_token(url, username, password)
 
-    # Get Device List according to type eg "Cisco+Catalyst+9300+Switch"
-    device_list = get_devices_by_type(url, cc_token, "Cisco Catalyst 9000 UADP 8 Port Virtual Switch")
+    # Get Device List according to type eg ["Switches+and+Hubs","Cisco+Catalyst+9300+Switch"]
+    # device_list = get_devices_by_type(url, cc_token, ["Switches+and+Hubs","Cisco Catalyst 9000 UADP 8 Port Virtual Switch"])
+    device_list = get_devices_by_type(url, cc_token)
 
     print("Starting analysis..")
     try:
@@ -494,7 +508,7 @@ def display_welcome_message():
     Analyzing Cisco IOS and IOS XE devices for energy efficiency and security...
 
     Please wait while we process the configurations and provide recommendations.
-    
+
     This software is licensed under the MIT License.
     """
 
@@ -510,6 +524,7 @@ if __name__ == "__main__":
 
     except KeyError:
         print("Environment variable 'OPEN_API_KEY' not found!")
+        print("Goodbye..")
         exit(0)
 
     try:
@@ -518,6 +533,7 @@ if __name__ == "__main__":
     except KeyError:
         print("Environment variable 'PSIRT_API_KEY' or 'PSIRT_API_SECRET' not found!")
         cve_token = None
+
 
     # CC creds
     cc_url = input("Enter your Catalyst Center URL or IP: ")  # "sandboxdnac.cisco.com"
