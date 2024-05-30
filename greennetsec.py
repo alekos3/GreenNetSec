@@ -534,7 +534,6 @@ if __name__ == "__main__":
         print("Environment variable 'PSIRT_API_KEY' or 'PSIRT_API_SECRET' not found!")
         cve_token = None
 
-
     # CC creds
     cc_url = input("Enter your Catalyst Center URL or IP: ")  # "sandboxdnac.cisco.com"
     cc_username = input("Enter your Catalyst Center username: ")  # "devnetuser"
